@@ -54,12 +54,12 @@ public:
         index_cleared = false;
     }
 
-    int init_new_index(const size_t maxElements, const size_t M, const size_t efConstruction, const size_t random_seed) {
+    int init_new_index(const size_t maxElements, const size_t M, const size_t efConstruction, const size_t random_seed, const bool allow_replace_deleted) {
         TRY_CATCH_NO_INITIALIZE_CHECK_AND_RETURN_INT_BLOCK({
             if (appr_alg) {
                 return RESULT_INDEX_ALREADY_INITIALIZED;
             }
-            appr_alg = new hnswlib::HierarchicalNSW<dist_t>(l2space, maxElements, M, efConstruction, random_seed);
+            appr_alg = new hnswlib::HierarchicalNSW<dist_t>(l2space, maxElements, M, efConstruction, random_seed, allow_replace_deleted);
             index_initialized = true;
         });
     }
@@ -228,8 +228,8 @@ EXTERN_C DLLEXPORT Index<float>* createNewIndex(char* spaceName, int dimension){
     return index;
 }
 
-EXTERN_C DLLEXPORT int initNewIndex(Index<float>* index, int maxNumberOfElements, int M = 16, int efConstruction = 200, int randomSeed = 100) {
-	return index->init_new_index(maxNumberOfElements, M, efConstruction, randomSeed);
+EXTERN_C DLLEXPORT int initNewIndex(Index<float>* index, int maxNumberOfElements, int M = 16, int efConstruction = 200, int randomSeed = 100, bool allow_replace_deleted = false) {
+	return index->init_new_index(maxNumberOfElements, M, efConstruction, randomSeed, allow_replace_deleted);
 } 
 
 EXTERN_C DLLEXPORT int addItemToIndex(float* item, int normalized, int label, Index<float>* index) {

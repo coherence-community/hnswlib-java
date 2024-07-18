@@ -51,7 +51,7 @@ public abstract class AbstractIndexTest {
 	@Test
 	public void testIndexInitialization() throws UnexpectedNativeException {
 		Index i1 = createIndexInstance(SpaceName.COSINE, 50);
-		i1.initialize(500_000, 16, 200, 100);
+		i1.initialize(500_000, 16, 200, 100, true);
 		assertEquals(0, i1.getLength());
 		i1.clear();
 	}
@@ -67,7 +67,7 @@ public abstract class AbstractIndexTest {
 	@Test(expected = IndexAlreadyInitializedException.class)
 	public void testIndexMultipleInitialization() throws UnexpectedNativeException {
 		Index i1 = createIndexInstance(SpaceName.COSINE, 50);
-		i1.initialize(500_000, 16, 200, 100);
+		i1.initialize(500_000, 16, 200, 100, true);
 		i1.initialize();
 	}
 

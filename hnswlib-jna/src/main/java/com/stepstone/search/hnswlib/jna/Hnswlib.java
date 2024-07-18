@@ -30,13 +30,13 @@ public interface Hnswlib extends Library {
 	 *
 	 * @param index - JNA pointer reference of the index;
 	 * @param maxNumberOfElements - max number of elements in the index;
-	 * @param m - the value of M;
+	 * @param m - M defines tha maximum number of outgoing connections in the graph;
 	 * @param efConstruction - ef parameter;
 	 * @param randomSeed - a random seed specified by the user.
-	 *
+	 * @param allowReplaceDeleted - enables replacing of deleted elements with new added ones
 	 * @return a result code.
 	 */
-	int initNewIndex(Pointer index, int maxNumberOfElements, int m, int efConstruction, int randomSeed);
+	int initNewIndex(Pointer index, int maxNumberOfElements, int m, int efConstruction, int randomSeed, boolean allowReplaceDeleted);
 
 	/**
 	 * Add an item to the index.

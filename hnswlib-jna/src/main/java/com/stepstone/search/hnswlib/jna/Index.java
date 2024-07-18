@@ -73,25 +73,26 @@ public class Index {
 	 * @param maxNumberOfElements allowed in the index.
 	 */
 	public void initialize(int maxNumberOfElements) {
-		initialize(maxNumberOfElements, 16, 200, 100);
+		initialize(maxNumberOfElements, 16, 200, 100, false);
 	}
 
 	/**
 	 * Initialize the index to be used.
 	 *
-	 * @param maxNumberOfElements ;
-	 * @param m ;
-	 * @param efConstruction ;
-	 * @param randomSeed .
+	 * @param maxNumberOfElements - max number of elements in the index;
+	 * @param m - M defines tha maximum number of outgoing connections in the graph;
+	 * @param efConstruction - ef parameter;
+	 * @param randomSeed - a random seed specified by the user.
+	 * @param allowReplaceDeleted - enables replacing of deleted elements with new added ones
 	 *
 	 * @throws IndexAlreadyInitializedException when a index reference was initialized before.
 	 * @throws UnexpectedNativeException when something unexpected happened in the native side.
 	 */
-	public void initialize(int maxNumberOfElements, int m, int efConstruction, int randomSeed) {
+	public void initialize(int maxNumberOfElements, int m, int efConstruction, int randomSeed, boolean allowReplaceDeleted) {
 		if (initialized) {
 			throw new IndexAlreadyInitializedException();
 		} else {
-			checkResultCode(hnswlib.initNewIndex(reference, maxNumberOfElements, m, efConstruction, randomSeed));
+			checkResultCode(hnswlib.initNewIndex(reference, maxNumberOfElements, m, efConstruction, randomSeed, allowReplaceDeleted));
 			initialized = true;
 		}
 	}

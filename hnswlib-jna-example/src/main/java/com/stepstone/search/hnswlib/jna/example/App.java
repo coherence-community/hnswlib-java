@@ -49,7 +49,7 @@ public class App {
         float[] i3 = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.9f};
 
         Index indexIP = new Index(SpaceName.IP, 7);
-        indexIP.initialize(3, 16, 100, 200); /* set maxNumberOfElements, m, efConstruction and randomSeed */
+        indexIP.initialize(3, 16, 100, 200, false); /* set maxNumberOfElements, m, efConstruction and randomSeed */
         indexIP.setEf(10);
         indexIP.addItem(i1, 1_111_111); /* 1_111_111 is an ID */
         indexIP.addItem(i2, 0xCAFECAFE);

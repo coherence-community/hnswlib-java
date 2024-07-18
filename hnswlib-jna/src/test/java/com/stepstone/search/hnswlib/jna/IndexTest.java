@@ -19,7 +19,7 @@ public class IndexTest extends AbstractIndexTest {
 	@Test
 	public void testSynchronisedIndex() throws UnexpectedNativeException {
 		Index i1 = createIndexInstance(SpaceName.COSINE, 50);
-		i1.initialize(500_000, 16, 200, 100);
+		i1.initialize(500_000, 16, 200, 100, false);
 		Index syncIndex = Index.synchronizedIndex(i1);
 		assertEquals(syncIndex.getLength(), i1.getLength());
 		assertThat(syncIndex, instanceOf(ConcurrentIndex.class));
@@ -29,7 +29,7 @@ public class IndexTest extends AbstractIndexTest {
 	@Test(expected = OnceIndexIsClearedItCannotBeReusedException.class)
 	public void testSynchronisedIndexFailAfterReferenceClear() throws UnexpectedNativeException {
 		Index i1 = createIndexInstance(SpaceName.COSINE, 50);
-		i1.initialize(500_000, 16, 200, 100);
+		i1.initialize(500_000, 16, 200, 100, true);
 		Index syncIndex = Index.synchronizedIndex(i1);
 		syncIndex.clear();
 		//has to fail as i1 was cleared through syncIndex
