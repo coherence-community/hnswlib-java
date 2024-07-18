@@ -1,5 +1,4 @@
-<a href="https://github.com/nmslib/hnswlib/releases"><img src="https://img.shields.io/static/v1?label=hnswlib&message=v0.4.0&color=blue"/></a>
-<a href="https://travis-ci.org/stepstone-tech/hnswlib-jna"><img src="https://api.travis-ci.org/stepstone-tech/hnswlib-jna.svg"/></a>
+<a href="https://github.com/nmslib/hnswlib/releases"><img src="https://img.shields.io/static/v1?label=hnswlib&message=v0.8.0&color=blue"/></a>
 
 # __Hnswlib with JNA (Java Native Access)__
 
