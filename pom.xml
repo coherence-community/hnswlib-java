@@ -4,19 +4,25 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <name>hnswlib</name>
-  <groupId>com.stepstone.search.hnswlib.jna</groupId>
-  <artifactId>hnswlib-jna-parent</artifactId>
-  <version>1.5.0</version>
+  <groupId>com.oracle.coherence.ai</groupId>
+  <artifactId>hnswlib-java-parent</artifactId>
+  <version>0.8.0</version>
   <packaging>pom</packaging>
 
-  <description>This project contains a JNA (Java Native Access) implementation built on top of the native Hnswlib (Hierarchical Navigable Small World Graph) which offers a fast approximate nearest neighbor search. It includes some modifications and simplifications in order to provide Hnswlib features with native like performance to applications written in Java. Differently from the original Python implementation, the multi-thread support is not included in the bindings itself but it can be easily implemented on the Java side.</description>
-  <url>https://github.com/stepstone-tech/hnswlib-jna</url>
+  <description>
+    This project contains a JNA (Java Native Access) implementation built on top of the native
+    Hnswlib (Hierarchical Navigable Small World Graph) which offers a fast approximate
+    nearest neighbor search. It includes some modifications and simplifications in order to
+    provide Hnswlib features with native like performance to applications written in Java.
+    Differently from the original Python implementation, the multi-thread support is not included
+    in the bindings itself but it can be easily implemented on the Java side.
+  </description>
+  <url>https://github.com/coherence-community/hnswlib-java</url>
 
   <scm>
-    <connection>scm:git:git://github.com/stepstone-tech/hnswlib-jna.git</connection>
-    <developerConnection>scm:git:ssh://github.com:stepstone-tech/hnswlib-jna.git</developerConnection>
-    <url>https://github.com/stepstone-tech/hnswlib-jna/tree/master</url>
+    <connection>scm:git:git://github.com/coherence-community/hnswlib-java.git</connection>
+    <developerConnection>scm:git:ssh://github.com:coherence-community/hnswlib-java.git</developerConnection>
+    <url>https://github.com/coherence-community/hnswlib-java/tree/master</url>
   </scm>
 
   <developers>
@@ -74,6 +80,11 @@
       <organization>StepStone</organization>
       <organizationUrl>https://www.stepstone.com</organizationUrl>
     </developer>
+    <developer>
+      <name>Aleks Seovic</name>
+      <organization>Oracle</organization>
+      <organizationUrl>https://www.oracle.com</organizationUrl>
+    </developer>
   </developers>
 
   <licenses>
@@ -84,8 +95,8 @@
   </licenses>
 
   <modules>
-    <module>hnswlib-jna</module>
-    <module>hnswlib-jna-example</module>
+    <module>hnswlib-java</module>
+    <module>hnswlib-java-example</module>
   </modules>
 
 </project>
