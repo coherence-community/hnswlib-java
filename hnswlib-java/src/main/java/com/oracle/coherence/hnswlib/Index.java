@@ -7,10 +7,10 @@ import com.oracle.coherence.hnswlib.exception.OnceIndexIsClearedItCannotBeReused
 import com.oracle.coherence.hnswlib.exception.QueryCannotReturnResultsException;
 import com.oracle.coherence.hnswlib.exception.UnableToCreateNewIndexInstanceException;
 import com.oracle.coherence.hnswlib.exception.UnexpectedNativeException;
+
 import com.sun.jna.Pointer;
-import it.unimi.dsi.fastutil.ints.IntArraySet;
-import it.unimi.dsi.fastutil.ints.IntSet;
-import it.unimi.dsi.fastutil.ints.IntSets;
+
+import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -22,42 +22,30 @@ import java.util.Optional;
  * Each instance of index has a different memory context and should work
  * independently.
  */
-public class Index
+public class Index implements Closeable
     {
-
     protected static final int NO_ID = -1;
 
     private static final int RESULT_SUCCESSFUL = 0;
-
     private static final int RESULT_QUERY_NO_RESULTS = 3;
-
     private static final int RESULT_ITEM_CANNOT_BE_INSERTED_INTO_THE_VECTOR_SPACE = 4;
-
     private static final int RESULT_ONCE_INDEX_IS_CLEARED_IT_CANNOT_BE_REUSED = 5;
-
     private static final int RESULT_INDEX_NOT_INITIALIZED = 8;
 
-    private static Hnswlib hnswlib = HnswlibFactory.getInstance();
+    private static final Hnswlib hnswlib = HnswlibFactory.getInstance();
 
     private Pointer reference;
-
-    private boolean initialized;
-
-    private boolean cleared;
-
-    private SpaceName spaceName;
-
-    private int dimension;
-
-    private boolean referenceReused;
-
-    private IntSet ids = IntSets.synchronize(new IntArraySet());
+    private volatile boolean initialized;
+    private volatile boolean cleared;
+    private volatile boolean referenceReused;
+    private final SpaceName spaceName;
+    private final int dimension;
 
     public Index(SpaceName spaceName, int dimension)
         {
         this.spaceName = spaceName;
         this.dimension = dimension;
-        reference = hnswlib.createNewIndex(spaceName.toString(), dimension);
+        this.reference = hnswlib.createNewIndex(spaceName.toString(), dimension);
         if (reference == null)
             {
             throw new UnableToCreateNewIndexInstanceException();
@@ -69,7 +57,7 @@ public class Index
      *
      * @param array input.
      */
-    public static strictfp void normalize(float[] array)
+    public static void normalize(float[] array)
         {
         int n = array.length;
         float norm = 0;
@@ -105,7 +93,6 @@ public class Index
         concurrentIndex.reference = index.reference;
         concurrentIndex.cleared = index.cleared;
         concurrentIndex.initialized = index.initialized;
-        concurrentIndex.setIds(index.getIds());
         index.referenceReused = true;
         return concurrentIndex;
         }
@@ -176,7 +163,7 @@ public class Index
      */
     public void addItem(float[] item)
         {
-        addItem(item, NO_ID);
+        addItem(item, NO_ID, false);
         }
 
     /**
@@ -189,40 +176,20 @@ public class Index
      */
     public void addItem(float[] item, int id)
         {
-        checkResultCode(hnswlib.addItemToIndex(item, false, id, reference));
+        addItem(item, id, false);
         }
 
     /**
      * Add an item with ID to the index. It won't apply any extra normalization
-     * unless it is required by the Vector Space (e.g., COSINE). Save id to
-     * internal collection if saveId = true
+     * unless it is required by the Vector Space (e.g., COSINE).
      *
      * @param item   item
      * @param id     id
-     * @param saveId true to save id to internal collection
+     * @param replaceDeleted true to replace an item marked as deleted
      */
-    public void addItem(float[] item, int id, boolean saveId)
+    public void addItem(float[] item, int id, boolean replaceDeleted)
         {
-        addItem(item, id);
-        if (saveId)
-            {
-            ids.add(id);
-            }
-        }
-
-    /**
-     * Get ids for items in this index
-     *
-     * @return set of ids
-     */
-    public IntSet getIds()
-        {
-        return ids;
-        }
-
-    public void setIds(IntSet ids)
-        {
-        this.ids = ids;
+        checkResultCode(hnswlib.addItemToIndex(reference, item, false, id, replaceDeleted));
         }
 
     /**
@@ -234,7 +201,7 @@ public class Index
      */
     public void addNormalizedItem(float[] item)
         {
-        addNormalizedItem(item, NO_ID);
+        addNormalizedItem(item, NO_ID, false);
         }
 
     /**
@@ -246,23 +213,20 @@ public class Index
      */
     public void addNormalizedItem(float[] item, int id)
         {
-        checkResultCode(hnswlib.addItemToIndex(item, true, id, reference));
+        addNormalizedItem(item, id, false);
         }
 
     /**
      * Add a normalized item with ID to the index.
      *
-     * @param item - float array with the length expected by the index
+     * @param item float array with the length expected by the index
      *             (dimension);
-     * @param id   - an identifier used by the native library.
+     * @param id   an identifier used by the native library.
+     * @param replaceDeleted true to replace an item marked as deleted
      */
-    public void addNormalizedItem(float[] item, int id, boolean saveId)
+    public void addNormalizedItem(float[] item, int id, boolean replaceDeleted)
         {
-        addNormalizedItem(item, id);
-        if (saveId)
-            {
-            ids.add(id);
-            }
+        checkResultCode(hnswlib.addItemToIndex(reference, item, true, id, replaceDeleted));
         }
 
     /**
@@ -346,16 +310,26 @@ public class Index
 
     /**
      * Cleanup the area allocated by the index in the native side.
-     *
-     * @throws Throwable when anything weird happened. :)
      */
     @Override
-    protected void finalize() throws Throwable
+    public void close()
         {
         if (!cleared && !referenceReused)
             {
             this.clear();
             }
+        }
+
+    /**
+     * Cleanup the area allocated by the index in the native side.
+     *
+     * @throws Throwable when anything weird happened. :)
+     */
+    @SuppressWarnings("removal")
+    @Override
+    protected void finalize() throws Throwable
+        {
+        close();
         super.finalize();
         }
 
@@ -370,18 +344,18 @@ public class Index
         {
         switch (resultCode)
             {
-            case RESULT_SUCCESSFUL:
-                break;
-            case RESULT_QUERY_NO_RESULTS:
-                throw new QueryCannotReturnResultsException();
-            case RESULT_ITEM_CANNOT_BE_INSERTED_INTO_THE_VECTOR_SPACE:
-                throw new ItemCannotBeInsertedIntoTheVectorSpaceException();
-            case RESULT_ONCE_INDEX_IS_CLEARED_IT_CANNOT_BE_REUSED:
-                throw new OnceIndexIsClearedItCannotBeReusedException();
-            case RESULT_INDEX_NOT_INITIALIZED:
-                throw new IndexNotInitializedException();
-            default:
-                throw new UnexpectedNativeException();
+            case RESULT_SUCCESSFUL ->
+                {
+                }
+            case RESULT_QUERY_NO_RESULTS ->
+                    throw new QueryCannotReturnResultsException();
+            case RESULT_ITEM_CANNOT_BE_INSERTED_INTO_THE_VECTOR_SPACE ->
+                    throw new ItemCannotBeInsertedIntoTheVectorSpaceException();
+            case RESULT_ONCE_INDEX_IS_CLEARED_IT_CANNOT_BE_REUSED ->
+                    throw new OnceIndexIsClearedItCannotBeReusedException();
+            case RESULT_INDEX_NOT_INITIALIZED ->
+                    throw new IndexNotInitializedException();
+            default -> throw new UnexpectedNativeException();
             }
         }
 
@@ -482,10 +456,6 @@ public class Index
     public void markDeleted(int id)
         {
         checkResultCode(hnswlib.markDeleted(reference, id));
-        if (ids.contains(id))
-            {
-            ids.remove(id);
-            }
         }
 
     private void checkIndexIsInitialized()

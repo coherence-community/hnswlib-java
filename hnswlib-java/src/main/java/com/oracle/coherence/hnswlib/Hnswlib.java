@@ -55,7 +55,7 @@ public interface Hnswlib
      *
      * @return a result code.
      */
-    int addItemToIndex(float[] item, boolean normalized, int id, Pointer index);
+    int addItemToIndex(Pointer index, float[] item, boolean normalized, int id, boolean replaceDeleted);
 
     /**
      * Retrieve the number of elements already inserted into the index.

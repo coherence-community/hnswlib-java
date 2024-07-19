@@ -109,7 +109,7 @@ public:
         }
     }
 
-    int add_item(float* item, bool item_normalized, int id) {
+    int add_item(float* item, bool item_normalized, int id, bool replaceDeleted = false) {
         TRY_CATCH_RETURN_INT_BLOCK({
             if (get_current_count() >= get_max_elements()) {
                 return RESULT_ITEM_CANNOT_BE_INSERTED_INTO_THE_VECTOR_SPACE;
@@ -118,7 +118,7 @@ public:
                 normalize_array(item);                
             }
             int current_id = id != -1 ? id : incremental_id++;             
-            appr_alg->addPoint(item, current_id);                
+            appr_alg->addPoint(item, current_id, replaceDeleted);
         });
     }
 
@@ -232,8 +232,8 @@ EXTERN_C DLLEXPORT int initNewIndex(Index<float>* index, int maxNumberOfElements
 	return index->init_new_index(maxNumberOfElements, M, efConstruction, randomSeed, allow_replace_deleted);
 } 
 
-EXTERN_C DLLEXPORT int addItemToIndex(float* item, int normalized, int label, Index<float>* index) {
-    return index->add_item(item, normalized, label);
+EXTERN_C DLLEXPORT int addItemToIndex(Index<float>* index, float* item, int normalized, int label, bool replaceDeleted = false) {
+    return index->add_item(item, normalized, label, replaceDeleted);
 }
 
 EXTERN_C DLLEXPORT int getIndexLength(Index<float>* index) {
