@@ -261,7 +261,7 @@ public class Index implements Closeable
      *
      * @param input  - float array;
      * @param k      - number of results expected.
-     * @param filter - an optional filter callback
+     * @param filter - an optional filter to filter the query results
      *
      * @return a query tuple instance that contain the indices and coefficients.
      */
@@ -290,8 +290,30 @@ public class Index implements Closeable
      */
     public QueryTuple knnNormalizedQuery(float[] input, int k)
         {
+        return knnNormalizedQuery(input, k, null);
+        }
+
+    /**
+     * Performs a knn query in the index instance using an normalized input. It
+     * will not normalize the vector again.
+     *
+     * @param input  - a normalized float array;
+     * @param k      - number of results expected.
+     * @param filter - an optional filter to filter the query results
+     *
+     * @return a query tuple instance that contain the indices and coefficients.
+     */
+    public QueryTuple knnNormalizedQuery(float[] input, int k, Hnswlib.QueryFilter filter)
+        {
         QueryTuple queryTuple = new QueryTuple(k);
-        checkResultCode(hnswlib.knnQuery(reference, input, true, k, queryTuple.ids, queryTuple.coefficients));
+        if (filter == null)
+            {
+            checkResultCode(hnswlib.knnQuery(reference, input, true, k, queryTuple.ids, queryTuple.coefficients));
+            }
+        else
+            {
+            checkResultCode(hnswlib.knnFilterQuery(reference, input, true, k, filter, queryTuple.ids, queryTuple.coefficients));
+            }
         return queryTuple;
         }
 
