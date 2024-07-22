@@ -17,25 +17,22 @@ import java.util.concurrent.TimeUnit;
 public class App {
 
     private static void exampleOfACosineIndex() {
-        float[] i1 = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
-        Index.normalize(i1);
-        float[] i2 = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.95f};
-        Index.normalize(i2);
-        float[] i3 = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.9f};
-        Index.normalize(i3); /* For cosine, if the normalization is not explicitly done, it will be done on the native side */
-                             /* when you call index.addItem(). When explicitly done (in the Java code), use addNormalizedItem()
-                                to avoid double normalization. */
+        float[] i1 = Index.normalize(new float[] {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f});
+        float[] i2 = Index.normalize(new float[] {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.95f});
+        float[] i3 = Index.normalize(new float[] {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.9f});
+        // For cosine, if the normalization is not explicitly done, it will be done on the native side
+        // when you call index.addItem(). When explicitly done (in the Java code), use addNormalizedItem()
+        // to avoid double normalization.
 
         Index indexCosine = new Index(SpaceName.COSINE, 7);
         indexCosine.initialize(3);
-        indexCosine.addNormalizedItem(i1, 1_111_111); /* 1_111_111 is an ID */
-        indexCosine.addNormalizedItem(i2, 2_222_222);
-        indexCosine.addNormalizedItem(i3); /* if not defined, an incremental ID will be automatically assigned */
+        indexCosine.addItem(i1, 1_111_111); /* 1_111_111 is an ID */
+        indexCosine.addItem(i2, 2_222_222);
+        indexCosine.addItem(i3); /* if not defined, an incremental ID will be automatically assigned */
 
-        float[] input = new float[] {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
-        Index.normalize(input);
+        float[] input = Index.normalize(new float[] {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f});
 
-        QueryTuple cosineQT = indexCosine.knnNormalizedQuery(input, 3);
+        QueryTuple cosineQT = indexCosine.knnQuery(input, 3);
 
         System.out.println("Cosine Index - Query Results: ");
         System.out.println(Arrays.toString(cosineQT.getCoefficients()));

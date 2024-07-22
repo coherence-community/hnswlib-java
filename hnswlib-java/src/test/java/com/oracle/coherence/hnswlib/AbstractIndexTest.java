@@ -232,26 +232,6 @@ public abstract class AbstractIndexTest {
 	}
 
 	@Test
-	public void testNativeArrayNormalization() throws UnexpectedNativeException {
-		Index index = createIndexInstance(SpaceName.COSINE, 7);
-		index.initialize(20);
-
-		float[] item1 = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
-		index.addItem(item1); /* COSINE requires a normalized item. So, this input will be normalized (and modified) before being added to the index. */
-		assertArrayEquals(new float[] {0.3779645f, 0.3779645f, 0.3779645f, 0.3779645f, 0.3779645f, 0.3779645f, 0.3779645f}, item1, 0.000001f);
-
-		float[] item2 = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
-		index.addNormalizedItem(item1); /* since we are using a add normalized method, nothing should happen here. */
-		assertArrayEquals(new float[] {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}, item2,0.000001f);
-
-		QueryTuple queryTuple = index.knnQuery(new float[] {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}, 1);
-		assertEquals(-2.3841858E-7f, queryTuple.getCoefficients()[0], 0.00001);
-
-		queryTuple = index.knnNormalizedQuery(item2, 1);
-		assertEquals(-1.645751476f, queryTuple.getCoefficients()[0], 0.00001);
-	}
-
-	@Test
 	public void testHostNormalization() {
 		float[] item1 = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
 		Index.normalize(item1);
@@ -269,21 +249,21 @@ public abstract class AbstractIndexTest {
 
 		Index indexCosine = createIndexInstance(SpaceName.COSINE, 7);
 		indexCosine.initialize(3);
-		indexCosine.addNormalizedItem(i1, 1_111_111);
-		indexCosine.addNormalizedItem(i2, 1_222_222);
-		indexCosine.addNormalizedItem(i3, 1_333_333);
+		indexCosine.addItem(i1, 1_111_111);
+		indexCosine.addItem(i2, 1_222_222);
+		indexCosine.addItem(i3, 1_333_333);
 
 		Index indexIP = createIndexInstance(SpaceName.IP, 7);
 		indexIP.initialize(3);
-		indexIP.addNormalizedItem(i1, 1_111_111);
-		indexIP.addNormalizedItem(i2, 1_222_222);
-		indexIP.addNormalizedItem(i3, 1_333_333);
+		indexIP.addItem(i1, 1_111_111);
+		indexIP.addItem(i2, 1_222_222);
+		indexIP.addItem(i3, 1_333_333);
 
 		float[] input = new float[] {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
 		Index.normalize(input);
 
-		QueryTuple cosineQT = indexCosine.knnNormalizedQuery(input, 3);
-		QueryTuple ipQT = indexCosine.knnNormalizedQuery(input, 3);
+		QueryTuple cosineQT = indexCosine.knnQuery(input, 3);
+		QueryTuple ipQT = indexCosine.knnQuery(input, 3);
 
 		assertArrayEquals(cosineQT.getCoefficients(), ipQT.getCoefficients(), 0.000001f);
 		assertArrayEquals(cosineQT.getIds(), ipQT.getIds());
@@ -316,13 +296,13 @@ public abstract class AbstractIndexTest {
 		Index index = createIndexInstance(SpaceName.COSINE, 7);
 		index.initialize(7);
 
-		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f }, 14);
-		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.95f }, 13);
-		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.9f }, 12);
-		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.85f }, 11);
-		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.8f },10);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f }), 14);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.95f }), 13);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.9f }), 12);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.85f }), 11);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.8f }),10);
 
-		float[] input = new float[] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
+		float[] input = Index.normalize(new float[] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f });
 		QueryTuple ipQT = index.knnQuery(input, 4);
 
 		assertArrayEquals(new int[] {14, 13, 12, 11}, ipQT.getIds());
@@ -335,18 +315,18 @@ public abstract class AbstractIndexTest {
 		Index index = createIndexInstance(SpaceName.COSINE, 7);
 		index.initialize(7);
 
-		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f }, 14);
-		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.95f }, 13);
-		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.9f }, 12);
-		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.85f }, 11);
-		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.8f },10);
-		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.75f },9);
-		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.7f },8);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f }), 14);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.95f }), 13);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.9f }), 12);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.85f }), 11);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.8f }),10);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.75f }),9);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.7f }),8);
 
 		// filter to allow only even id values
 		Hnswlib.QueryFilter filter = id -> id % 2 == 0;
 
-		float[] input = new float[] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
+		float[] input = Index.normalize(new float[] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f });
 		QueryTuple ipQT = index.knnQuery(input, 4, filter);
 
 		assertArrayEquals(new int[] {14, 12, 10, 8}, ipQT.getIds());
@@ -460,21 +440,9 @@ public abstract class AbstractIndexTest {
 	}
 
 	@Test(expected = IndexNotInitializedException.class)
-	public void testUseAddNormalizedItemIndexWithoutInitialize() {
-		Index index = createIndexInstance(SpaceName.COSINE, 1);
-		index.addNormalizedItem(new float[1]);
-	}
-
-	@Test(expected = IndexNotInitializedException.class)
 	public void testUseKnnQueryIndexWithoutInitialize() {
 		Index index = createIndexInstance(SpaceName.COSINE, 1);
 		index.knnQuery(new float[1],1);
-	}
-
-	@Test(expected = IndexNotInitializedException.class)
-	public void testUseKnnNormalizedQueryQueryIndexWithoutInitialize() {
-		Index index = createIndexInstance(SpaceName.COSINE, 1);
-		index.knnNormalizedQuery(new float[1],1);
 	}
 
 	@Test(expected = IndexNotInitializedException.class)
@@ -500,13 +468,13 @@ public abstract class AbstractIndexTest {
 		Index index = createIndexInstance(SpaceName.COSINE, 7);
 		index.initialize(7);
 
-		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f }, 14);
-		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.95f }, 13);
-		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.9f }, 12);
-		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.85f }, 11);
-		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.8f },10);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f }), 14);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.95f }), 13);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.9f }), 12);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.85f }), 11);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.8f }),10);
 
-		float[] input = new float[] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
+		float[] input = Index.normalize(new float[] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f });
 		QueryTuple ipQT = index.knnQuery(input, 4);
 
 		assertArrayEquals(new int[] {14, 13, 12, 11}, ipQT.getIds());

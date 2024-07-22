@@ -57,7 +57,7 @@ public class Index implements Closeable
      *
      * @param array input.
      */
-    public static void normalize(float[] array)
+    public static float[] normalize(float[] array)
         {
         int n = array.length;
         float norm = 0;
@@ -70,6 +70,7 @@ public class Index implements Closeable
             {
             array[i] = array[i] * norm;
             }
+        return array;
         }
 
     /**
@@ -189,44 +190,7 @@ public class Index implements Closeable
      */
     public void addItem(float[] item, int id, boolean replaceDeleted)
         {
-        checkResultCode(hnswlib.addItemToIndex(reference, item, false, id, replaceDeleted));
-        }
-
-    /**
-     * Add a normalized item without ID to the index. Internally, an incremental
-     * ID (starting from 0) will be given to this item.
-     *
-     * @param item - float array with the length expected by the index
-     *             (dimension).
-     */
-    public void addNormalizedItem(float[] item)
-        {
-        addNormalizedItem(item, NO_ID, false);
-        }
-
-    /**
-     * Add a normalized item with ID to the index.
-     *
-     * @param item - float array with the length expected by the index
-     *             (dimension);
-     * @param id   - an identifier used by the native library.
-     */
-    public void addNormalizedItem(float[] item, int id)
-        {
-        addNormalizedItem(item, id, false);
-        }
-
-    /**
-     * Add a normalized item with ID to the index.
-     *
-     * @param item float array with the length expected by the index
-     *             (dimension);
-     * @param id   an identifier used by the native library.
-     * @param replaceDeleted true to replace an item marked as deleted
-     */
-    public void addNormalizedItem(float[] item, int id, boolean replaceDeleted)
-        {
-        checkResultCode(hnswlib.addItemToIndex(reference, item, true, id, replaceDeleted));
+        checkResultCode(hnswlib.addItemToIndex(reference, item, id, replaceDeleted));
         }
 
     /**
@@ -270,49 +234,11 @@ public class Index implements Closeable
         QueryTuple queryTuple = new QueryTuple(k);
         if (filter == null)
             {
-            checkResultCode(hnswlib.knnQuery(reference, input, false, k, queryTuple.ids, queryTuple.coefficients));
+            checkResultCode(hnswlib.knnQuery(reference, input, k, queryTuple.ids, queryTuple.coefficients));
             }
         else
             {
-            checkResultCode(hnswlib.knnFilterQuery(reference, input, false, k, filter, queryTuple.ids, queryTuple.coefficients));
-            }
-        return queryTuple;
-        }
-
-    /**
-     * Performs a knn query in the index instance using an normalized input. It
-     * will not normalize the vector again.
-     *
-     * @param input - a normalized float array;
-     * @param k     - number of results expected.
-     *
-     * @return a query tuple instance that contain the indices and coefficients.
-     */
-    public QueryTuple knnNormalizedQuery(float[] input, int k)
-        {
-        return knnNormalizedQuery(input, k, null);
-        }
-
-    /**
-     * Performs a knn query in the index instance using an normalized input. It
-     * will not normalize the vector again.
-     *
-     * @param input  - a normalized float array;
-     * @param k      - number of results expected.
-     * @param filter - an optional filter to filter the query results
-     *
-     * @return a query tuple instance that contain the indices and coefficients.
-     */
-    public QueryTuple knnNormalizedQuery(float[] input, int k, Hnswlib.QueryFilter filter)
-        {
-        QueryTuple queryTuple = new QueryTuple(k);
-        if (filter == null)
-            {
-            checkResultCode(hnswlib.knnQuery(reference, input, true, k, queryTuple.ids, queryTuple.coefficients));
-            }
-        else
-            {
-            checkResultCode(hnswlib.knnFilterQuery(reference, input, true, k, filter, queryTuple.ids, queryTuple.coefficients));
+            checkResultCode(hnswlib.knnFilterQuery(reference, input, k, filter, queryTuple.ids, queryTuple.coefficients));
             }
         return queryTuple;
         }

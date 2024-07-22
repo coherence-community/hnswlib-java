@@ -53,14 +53,12 @@ class Index {
 public:
     Index(const std::string &space_name, const int dim) :
             space_name(space_name), dim(dim) {
-        data_must_be_normalized = false;
         if(space_name=="L2") {
             l2space = new hnswlib::L2Space(dim);
         } else if(space_name=="IP") {
             l2space = new hnswlib::InnerProductSpace(dim);
         } else if(space_name=="COSINE") {
             l2space = new hnswlib::InnerProductSpace(dim);
-            data_must_be_normalized = true;
         }
         appr_alg = NULL;
         index_initialized = false;
@@ -111,26 +109,12 @@ public:
         });
     }
 
-	void normalize_array(float* array){
-        float norm = 0.0f;
-        for (int i=0; i<dim; i++) {
-            norm += (array[i] * array[i]);
-        }
-        norm = 1.0f / (sqrtf(norm) + 1e-30f);
-        for (int i=0; i<dim; i++) {
-            array[i] = array[i] * norm;
-        }
-    }
-
-    int add_item(float* item, bool item_normalized, int id, bool replaceDeleted = false) {
+    int add_item(float* item, int id, bool replaceDeleted = false) {
         TRY_CATCH_RETURN_INT_BLOCK({
             if (get_current_count() >= get_max_elements()) {
                 return RESULT_ITEM_CANNOT_BE_INSERTED_INTO_THE_VECTOR_SPACE;
             }            
-            if ((data_must_be_normalized == true) && (item_normalized == false)) {
-                normalize_array(item);                
-            }
-            int current_id = id != -1 ? id : incremental_id++;             
+            int current_id = id != -1 ? id : incremental_id++;
             appr_alg->addPoint(item, current_id, replaceDeleted);
         });
     }
@@ -172,12 +156,9 @@ public:
     	return similarity;
     }
 
-    int knn_query(float* input, bool input_normalized, int k, int* indices, /* output */ float* coefficients /* output */, hnswlib::BaseFilterFunctor* filter = nullptr) {
+    int knn_query(float* input, int k, int* indices, /* output */ float* coefficients /* output */, hnswlib::BaseFilterFunctor* filter = nullptr) {
         std::priority_queue<std::pair<dist_t, hnswlib::labeltype >> result;
         TRY_CATCH_RETURN_INT_BLOCK({
-            if ((data_must_be_normalized == true) && (input_normalized == false)) {
-                normalize_array(input);
-            }
             result = appr_alg->searchKnn((void*) input, k, filter);
             if (result.size() != k)
                 return RESULT_QUERY_CANNOT_RETURN;
@@ -221,7 +202,6 @@ public:
     int dim;
     bool index_cleared;
     bool index_initialized;
-    bool data_must_be_normalized;
     std::atomic<unsigned long> incremental_id{0};
     hnswlib::HierarchicalNSW<dist_t> *appr_alg;
     hnswlib::SpaceInterface<float> *l2space;
@@ -245,8 +225,8 @@ EXTERN_C DLLEXPORT int initNewIndex(Index<float>* index, int maxNumberOfElements
 	return index->init_new_index(maxNumberOfElements, M, efConstruction, randomSeed, allow_replace_deleted);
 } 
 
-EXTERN_C DLLEXPORT int addItemToIndex(Index<float>* index, float* item, int normalized, int label, bool replaceDeleted = false) {
-    return index->add_item(item, normalized, label, replaceDeleted);
+EXTERN_C DLLEXPORT int addItemToIndex(Index<float>* index, float* item, int label, bool replaceDeleted = false) {
+    return index->add_item(item, label, replaceDeleted);
 }
 
 EXTERN_C DLLEXPORT int getIndexLength(Index<float>* index) {
@@ -267,13 +247,13 @@ EXTERN_C DLLEXPORT int loadIndexFromPath(Index<float>* index, size_t maxNumberOf
     return index->load_index(path_string, maxNumberOfElements);
 }
 
-EXTERN_C DLLEXPORT int knnQuery(Index<float>* index, float* input, int normalized, int k, int* indices /* output */, float* coefficients /* output */) {
-    return index->knn_query(input, normalized, k, indices, coefficients);
+EXTERN_C DLLEXPORT int knnQuery(Index<float>* index, float* input, int k, int* indices /* output */, float* coefficients /* output */) {
+    return index->knn_query(input, k, indices, coefficients);
 }
 
-EXTERN_C DLLEXPORT int knnFilterQuery(Index<float>* index, float* input, int normalized, int k, filter_func filter, int* indices /* output */, float* coefficients /* output */) {
+EXTERN_C DLLEXPORT int knnFilterQuery(Index<float>* index, float* input, int k, filter_func filter, int* indices /* output */, float* coefficients /* output */) {
     FilterWrapper fn(filter);
-    return index->knn_query(input, normalized, k, indices, coefficients, &fn);
+    return index->knn_query(input, k, indices, coefficients, &fn);
 }
 
 EXTERN_C DLLEXPORT int clearIndex(Index<float>* index) {

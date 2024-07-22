@@ -42,20 +42,6 @@ public class ConcurrentIndex
         }
 
     @Override
-    public void addNormalizedItem(float[] item, int id, boolean replaceDeleted)
-        {
-        lock.writeLock().lock();
-        try
-            {
-            super.addNormalizedItem(item, id, replaceDeleted);
-            }
-        finally
-            {
-            lock.writeLock().unlock();
-            }
-        }
-
-    @Override
     public int getLength()
         {
         lock.readLock().lock();
@@ -76,20 +62,6 @@ public class ConcurrentIndex
         try
             {
             return super.knnQuery(input, k);
-            }
-        finally
-            {
-            lock.readLock().unlock();
-            }
-        }
-
-    @Override
-    public QueryTuple knnNormalizedQuery(float[] input, int k)
-        {
-        lock.readLock().lock();
-        try
-            {
-            return super.knnNormalizedQuery(input, k);
             }
         finally
             {

@@ -49,14 +49,12 @@ public interface Hnswlib
      *
      * @param item       - array containing the input to be inserted into the
      *                   index;
-     * @param normalized - is the item normalized? if not and if required, it
-     *                   will be performed at the native level;
      * @param id         - an identifier to be used for this entry;
      * @param index      - JNA pointer reference of the index.
      *
      * @return a result code.
      */
-    int addItemToIndex(Pointer index, float[] item, boolean normalized, int id, boolean replaceDeleted);
+    int addItemToIndex(Pointer index, float[] item, int id, boolean replaceDeleted);
 
     /**
      * Retrieve the number of elements already inserted into the index.
@@ -91,14 +89,13 @@ public interface Hnswlib
     int loadIndexFromPath(Pointer index, int maxNumberOfElements, String path);
 
     /**
-     * This function invokes the knnQuery available in the hnswlib native
+     * This function invokes the knnFilterQuery available in the hnswlib native
      * library.
      *
-     * @param index        - JNA pointer reference of the index;
-     * @param input        - input used for the query;
-     * @param normalized   - is the input normalized? if not and if required, it
-     *                     will be performed at the native level;
-     * @param k            - dimension used for the query;
+     * @param index        JNA pointer reference of the index;
+     * @param input        input used for the query;
+     * @param k            dimension used for the query;
+     * @param filter       query filter to apply
      * @param indices      [output] retrieves the indices returned by the
      *                     query;
      * @param coefficients [output] retrieves the coefficients returned by the
@@ -106,9 +103,23 @@ public interface Hnswlib
      *
      * @return a result code.
      */
-    int knnFilterQuery(Pointer index, float[] input, boolean normalized, int k, QueryFilter filter, int[] indices, float[] coefficients);
+    int knnFilterQuery(Pointer index, float[] input, int k, QueryFilter filter, int[] indices, float[] coefficients);
 
-    int knnQuery(Pointer index, float[] input, boolean normalized, int k, int[] indices, float[] coefficients);
+    /**
+     * This function invokes the knnQuery available in the hnswlib native
+     * library.
+     *
+     * @param index        JNA pointer reference of the index;
+     * @param input        input used for the query;
+     * @param k            dimension used for the query;
+     * @param indices      [output] retrieves the indices returned by the
+     *                     query;
+     * @param coefficients [output] retrieves the coefficients returned by the
+     *                     query.
+     *
+     * @return a result code.
+     */
+    int knnQuery(Pointer index, float[] input, int k, int[] indices, float[] coefficients);
 
     /**
      * Clear the index from the memory.
