@@ -1,5 +1,6 @@
 package com.oracle.coherence.hnswlib;
 
+import com.sun.jna.Callback;
 import com.sun.jna.Library;
 import com.sun.jna.Pointer;
 
@@ -105,6 +106,8 @@ public interface Hnswlib
      *
      * @return a result code.
      */
+    int knnFilterQuery(Pointer index, float[] input, boolean normalized, int k, QueryFilter filter, int[] indices, float[] coefficients);
+
     int knnQuery(Pointer index, float[] input, boolean normalized, int k, int[] indices, float[] coefficients);
 
     /**
@@ -196,4 +199,22 @@ public interface Hnswlib
      */
     int markDeleted(Pointer index, int id);
 
+    /**
+     * A filter class that can determine whether a specified identifier
+     * should be returned in a HNSW search query.
+     */
+    interface QueryFilter
+            extends Callback
+        {
+        /**
+         * Return {@code true} if the specified {@code id}
+         * can be returned in the search results.
+         *
+         * @param id  the {@code id} to test
+         *
+         * @return {@code true} if the specified {@code id}
+         *         can be returned in the search results
+         */
+        boolean filter(int id);
+        }
     }

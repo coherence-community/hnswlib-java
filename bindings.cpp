@@ -35,6 +35,19 @@
 #define TRY_CATCH_NO_INITIALIZE_CHECK_AND_RETURN_INT_BLOCK(block)    if (index_cleared) return RESULT_ONCE_INDEX_IS_CLEARED_IT_CANNOT_BE_REUSED;  int result_code = RESULT_SUCCESSFUL; try { block } catch (...) { result_code = RESULT_EXCEPTION_THROWN; }; return result_code;
 #define TRY_CATCH_RETURN_INT_BLOCK(block)    if (!index_initialized) return RESULT_INDEX_NOT_INITIALIZED; TRY_CATCH_NO_INITIALIZE_CHECK_AND_RETURN_INT_BLOCK(block)
 
+typedef bool (*filter_func) (hnswlib::labeltype);
+
+class FilterWrapper: public hnswlib::BaseFilterFunctor {
+    filter_func fn;
+
+public:
+    FilterWrapper(filter_func func) : fn(func) {}
+
+    bool operator()(hnswlib::labeltype id) {
+        return fn(id);
+    }
+};
+
 template<typename dist_t, typename data_t=float>
 class Index {
 public:
@@ -159,13 +172,13 @@ public:
     	return similarity;
     }
 
-    int knn_query(float* input, bool input_normalized, int k, int* indices /* output */, float* coefficients /* output */) {
+    int knn_query(float* input, bool input_normalized, int k, int* indices, /* output */ float* coefficients /* output */, hnswlib::BaseFilterFunctor* filter = nullptr) {
         std::priority_queue<std::pair<dist_t, hnswlib::labeltype >> result;
         TRY_CATCH_RETURN_INT_BLOCK({
             if ((data_must_be_normalized == true) && (input_normalized == false)) {
                 normalize_array(input);
             }
-            result = appr_alg->searchKnn((void*) input, k);
+            result = appr_alg->searchKnn((void*) input, k, filter);
             if (result.size() != k)
                 return RESULT_QUERY_CANNOT_RETURN;
             for (int i = k - 1; i >= 0; i--) {
@@ -256,6 +269,11 @@ EXTERN_C DLLEXPORT int loadIndexFromPath(Index<float>* index, size_t maxNumberOf
 
 EXTERN_C DLLEXPORT int knnQuery(Index<float>* index, float* input, int normalized, int k, int* indices /* output */, float* coefficients /* output */) {
     return index->knn_query(input, normalized, k, indices, coefficients);
+}
+
+EXTERN_C DLLEXPORT int knnFilterQuery(Index<float>* index, float* input, int normalized, int k, filter_func filter, int* indices /* output */, float* coefficients /* output */) {
+    FilterWrapper fn(filter);
+    return index->knn_query(input, normalized, k, indices, coefficients, &fn);
 }
 
 EXTERN_C DLLEXPORT int clearIndex(Index<float>* index) {

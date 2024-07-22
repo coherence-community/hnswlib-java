@@ -251,8 +251,31 @@ public class Index implements Closeable
      */
     public QueryTuple knnQuery(float[] input, int k)
         {
+        return knnQuery(input, k, null);
+        }
+
+    /**
+     * Performs a knn query in the index instance. In case the vector space
+     * requires the input to be normalized, it will normalize at the native
+     * level.
+     *
+     * @param input  - float array;
+     * @param k      - number of results expected.
+     * @param filter - an optional filter callback
+     *
+     * @return a query tuple instance that contain the indices and coefficients.
+     */
+    public QueryTuple knnQuery(float[] input, int k, Hnswlib.QueryFilter filter)
+        {
         QueryTuple queryTuple = new QueryTuple(k);
-        checkResultCode(hnswlib.knnQuery(reference, input, false, k, queryTuple.ids, queryTuple.coefficients));
+        if (filter == null)
+            {
+            checkResultCode(hnswlib.knnQuery(reference, input, false, k, queryTuple.ids, queryTuple.coefficients));
+            }
+        else
+            {
+            checkResultCode(hnswlib.knnFilterQuery(reference, input, false, k, filter, queryTuple.ids, queryTuple.coefficients));
+            }
         return queryTuple;
         }
 
