@@ -189,12 +189,12 @@ public abstract class AbstractIndexTest {
 		i1.clear();
 	}
 
-	@Test(expected = QueryCannotReturnResultsException.class)
+	@Test
 	public void testQueryEmptyException() throws UnexpectedNativeException {
 		Index idx = createIndexInstance(SpaceName.COSINE, 3);
 		idx.initialize(300);
 		QueryTuple queryTuple = idx.knnQuery(new float[] {1.3f, 1.4f, 1.5f}, 3);
-		assertNull(queryTuple);
+		assertTrue(queryTuple.empty());
 	}
 
 	@Test
@@ -331,6 +331,31 @@ public abstract class AbstractIndexTest {
 
 		assertArrayEquals(new int[] {14, 12, 10, 8}, ipQT.getIds());
 		assertArrayEquals(new float[] {-2.3841858E-7f, 6.2948465E-4f, 0.0025850534f, 0.005960822f}, ipQT.getCoefficients(), 0.000001f);
+		index.clear();
+	}
+
+	@Test
+	public void testSimpleQueryOf5ElementsAndDimension7CosineWithFilterWithFewerMatches() throws UnexpectedNativeException {
+		Index index = createIndexInstance(SpaceName.COSINE, 7);
+		index.initialize(7);
+
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f }), 14);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.95f }), 13);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.9f }), 12);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.85f }), 11);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.8f }),10);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.75f }),9);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.7f }),8);
+
+		// filter to allow only even id values
+		Hnswlib.QueryFilter filter = id -> id % 2 == 0 && id != 12;
+
+		float[] input = Index.normalize(new float[] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f });
+		QueryTuple ipQT = index.knnQuery(input, 4, filter);
+
+		assertEquals(3, ipQT.count());
+		assertArrayEquals(new int[] {14, 10, 8, 0}, ipQT.getIds());
+		assertArrayEquals(new float[] {-2.3841858E-7f, 0.0025850534f, 0.005960822f, 0.0f}, ipQT.getCoefficients(), 0.000001f);
 		index.clear();
 	}
 

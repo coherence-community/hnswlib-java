@@ -234,11 +234,30 @@ public class Index implements Closeable
         QueryTuple queryTuple = new QueryTuple(k);
         if (filter == null)
             {
-            checkResultCode(hnswlib.knnQuery(reference, input, k, queryTuple.ids, queryTuple.coefficients));
+            boolean empty = checkResultCode(hnswlib.knnQuery(reference, input, k, queryTuple.ids, queryTuple.coefficients));
+            queryTuple.empty(empty);
             }
         else
             {
-            checkResultCode(hnswlib.knnFilterQuery(reference, input, k, filter, queryTuple.ids, queryTuple.coefficients));
+            CapturingFilter capturingFilter = new CapturingFilter(k, filter);
+            boolean empty = checkResultCode(hnswlib.knnFilterQuery(reference, input, k, capturingFilter, queryTuple.ids, queryTuple.coefficients));
+            if (empty && capturingFilter.count != 0)
+                {
+                int[] ids = capturingFilter.ids;
+                queryTuple = new QueryTuple(ids);
+                queryTuple.count(capturingFilter.count);
+                float[] coefficients = queryTuple.coefficients;
+                for (int i = 0; i < capturingFilter.count; i++)
+                    {
+                    float[] vector = new float[dimension];
+                    hnswlib.getData(reference, ids[i], vector, dimension);
+                    coefficients[i] = computeSimilarity(input, vector);
+                    }
+                }
+            else
+                {
+                queryTuple.empty(empty);
+                }
             }
         return queryTuple;
         }
@@ -311,15 +330,18 @@ public class Index implements Closeable
      * @throws UnexpectedNativeException when something went out of control in
      *                                   the native side.
      */
-    private void checkResultCode(int resultCode)
+    private boolean checkResultCode(int resultCode)
         {
         switch (resultCode)
             {
             case RESULT_SUCCESSFUL ->
                 {
+                return false;
                 }
             case RESULT_QUERY_NO_RESULTS ->
-                    throw new QueryCannotReturnResultsException();
+                {
+                return true;
+                }
             case RESULT_ITEM_CANNOT_BE_INSERTED_INTO_THE_VECTOR_SPACE ->
                     throw new ItemCannotBeInsertedIntoTheVectorSpaceException();
             case RESULT_ONCE_INDEX_IS_CLEARED_IT_CANNOT_BE_REUSED ->
@@ -434,6 +456,37 @@ public class Index implements Closeable
         if (!initialized)
             {
             throw new IndexNotInitializedException();
+            }
+        }
+
+    protected static class CapturingFilter
+            implements Hnswlib.QueryFilter
+        {
+        private final int max;
+
+        private final int[] ids;
+
+        private final Hnswlib.QueryFilter delegate;
+
+        private int count;
+
+        public CapturingFilter(int k, Hnswlib.QueryFilter delegate)
+            {
+            this.max = k;
+            this.ids = new int[k];
+            this.delegate = delegate;
+            this.count = 0;
+            }
+
+        @Override
+        public boolean filter(int id)
+            {
+            boolean match = delegate.filter(id);
+            if (match && count < max)
+                {
+                ids[count++] = id;
+                }
+            return match;
             }
         }
     }
