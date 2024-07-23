@@ -4,7 +4,6 @@ import com.oracle.coherence.hnswlib.exception.IndexAlreadyInitializedException;
 import com.oracle.coherence.hnswlib.exception.IndexNotInitializedException;
 import com.oracle.coherence.hnswlib.exception.ItemCannotBeInsertedIntoTheVectorSpaceException;
 import com.oracle.coherence.hnswlib.exception.OnceIndexIsClearedItCannotBeReusedException;
-import com.oracle.coherence.hnswlib.exception.QueryCannotReturnResultsException;
 import com.oracle.coherence.hnswlib.exception.UnableToCreateNewIndexInstanceException;
 import com.oracle.coherence.hnswlib.exception.UnexpectedNativeException;
 
@@ -231,32 +230,47 @@ public class Index implements Closeable
      */
     public QueryTuple knnQuery(float[] input, int k, Hnswlib.QueryFilter filter)
         {
-        QueryTuple queryTuple = new QueryTuple(k);
+        int length = getLength();
+        if (length == 0)
+            {
+            checkIndexIsInitialized();
+            return QueryTuple.EMPTY;
+            }
+
+        int        kActual    = Math.min(k, length);
+        QueryTuple queryTuple = new QueryTuple(kActual);
+
         if (filter == null)
             {
-            boolean empty = checkResultCode(hnswlib.knnQuery(reference, input, k, queryTuple.ids, queryTuple.coefficients));
-            queryTuple.empty(empty);
+            boolean empty = checkResultCode(hnswlib.knnQuery(reference, input, kActual, queryTuple.ids, queryTuple.coefficients));
+            if (empty)
+                {
+                return QueryTuple.EMPTY;
+                }
             }
         else
             {
-            CapturingFilter capturingFilter = new CapturingFilter(k, filter);
-            boolean empty = checkResultCode(hnswlib.knnFilterQuery(reference, input, k, capturingFilter, queryTuple.ids, queryTuple.coefficients));
-            if (empty && capturingFilter.count != 0)
+            CapturingFilter capturingFilter = new CapturingFilter(kActual, filter);
+            boolean empty = checkResultCode(hnswlib.knnFilterQuery(reference, input, kActual, capturingFilter, queryTuple.ids, queryTuple.coefficients));
+            if (empty)
                 {
-                int[] ids = capturingFilter.ids;
-                queryTuple = new QueryTuple(ids);
-                queryTuple.count(capturingFilter.count);
-                float[] coefficients = queryTuple.coefficients;
-                for (int i = 0; i < capturingFilter.count; i++)
+                if (capturingFilter.count == 0)
                     {
-                    float[] vector = new float[dimension];
-                    hnswlib.getData(reference, ids[i], vector, dimension);
-                    coefficients[i] = computeSimilarity(input, vector);
+                    return QueryTuple.EMPTY;
                     }
-                }
-            else
-                {
-                queryTuple.empty(empty);
+                else
+                    {
+                    int[] ids = capturingFilter.ids;
+                    queryTuple = new QueryTuple(ids);
+                    queryTuple.count(capturingFilter.count);
+                    float[] coefficients = queryTuple.coefficients;
+                    for (int i = 0; i < capturingFilter.count; i++)
+                        {
+                        float[] vector = new float[dimension];
+                        hnswlib.getData(reference, ids[i], vector, dimension);
+                        coefficients[i] = computeSimilarity(input, vector);
+                        }
+                    }
                 }
             }
         return queryTuple;

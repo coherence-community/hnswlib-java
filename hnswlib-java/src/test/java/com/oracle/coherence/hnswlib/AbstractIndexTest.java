@@ -24,6 +24,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("resource")
 public abstract class AbstractIndexTest {
 
 	protected abstract Index createIndexInstance(SpaceName spaceName, int dimensions);
@@ -292,6 +293,37 @@ public abstract class AbstractIndexTest {
 	}
 
 	@Test
+	public void testQueryOnEmptyIndex() throws UnexpectedNativeException {
+		Index index = createIndexInstance(SpaceName.IP, 7);
+		index.initialize(7);
+
+		float[] input = new float[] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
+		QueryTuple ipQT = index.knnQuery(input, 4);
+
+		assertTrue(ipQT.empty());
+		assertEquals(0, ipQT.count());
+		index.clear();
+	}
+
+	@Test
+	public void testSimpleQueryWhereIndexHasFewerElements() throws UnexpectedNativeException {
+		Index index = createIndexInstance(SpaceName.IP, 7);
+		index.initialize(7);
+
+		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f }, 5);
+		index.addItem(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.95f }, 6);
+
+		float[] input = new float[] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
+		QueryTuple ipQT = index.knnQuery(input, 4);
+
+		assertFalse(ipQT.empty());
+		assertEquals(2, ipQT.count());
+		assertArrayEquals(new int[] {5, 6}, ipQT.getIds());
+		assertArrayEquals(new float[] {-6.0f, -5.95f}, ipQT.getCoefficients(), 0.000001f);
+		index.clear();
+	}
+
+	@Test
 	public void testSimpleQueryOf5ElementsAndDimension7Cosine() throws UnexpectedNativeException {
 		Index index = createIndexInstance(SpaceName.COSINE, 7);
 		index.initialize(7);
@@ -331,6 +363,30 @@ public abstract class AbstractIndexTest {
 
 		assertArrayEquals(new int[] {14, 12, 10, 8}, ipQT.getIds());
 		assertArrayEquals(new float[] {-2.3841858E-7f, 6.2948465E-4f, 0.0025850534f, 0.005960822f}, ipQT.getCoefficients(), 0.000001f);
+		index.clear();
+	}
+
+	@Test
+	public void testSimpleQueryOf5ElementsAndDimension7CosineWithFilterNoneMatch() throws UnexpectedNativeException {
+		Index index = createIndexInstance(SpaceName.COSINE, 7);
+		index.initialize(7);
+
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f }), 14);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.95f }), 13);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.9f }), 12);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.85f }), 11);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.8f }),10);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.75f }),9);
+		index.addItem(Index.normalize(new float [] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.7f }),8);
+
+		// filter to allow only even id values
+		Hnswlib.QueryFilter filter = id -> false;
+
+		float[] input = Index.normalize(new float[] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f });
+		QueryTuple ipQT = index.knnQuery(input, 4, filter);
+
+		assertTrue(ipQT.empty());
+		assertEquals(0, ipQT.count());
 		index.clear();
 	}
 

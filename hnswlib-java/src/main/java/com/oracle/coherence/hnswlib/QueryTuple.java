@@ -17,12 +17,6 @@ public class QueryTuple
     float[] coefficients;
 
     /**
-     * A flag indicating whether there were no matches.
-     * This only applied if querying with filters
-     */
-    boolean empty = false;
-
-    /**
      * The number of actual matches (which may be less than the size of the id array).
      * This only applied if querying with filters
      */
@@ -77,18 +71,15 @@ public class QueryTuple
      */
     public boolean empty()
         {
-        return empty;
+        return count == 0;
         }
 
     /**
-     * Set the flag to indicate whther this {@link QueryTuple}
-     * holds any results.
-     *
-     * @param empty {@code true} if there are no results
+     * Set this {@link QueryTuple} to be empty
      */
-    void empty(boolean empty)
+    void setEmpty()
         {
-        this.empty = empty;
+        this.count = 0;
         }
 
     /**
@@ -110,4 +101,9 @@ public class QueryTuple
         {
         this.count = count;
         }
+
+    /**
+     * An empty {@link QueryTuple}.
+     */
+    public static final QueryTuple EMPTY = new QueryTuple(0);
     }
