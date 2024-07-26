@@ -203,6 +203,26 @@ public class Index implements Closeable
         }
 
     /**
+     * Return the maximum number of elements that can be inserted into the index.
+     *
+     * @return number of items that can be inserted into the index.
+     */
+    public int getMaxLength()
+        {
+        return hnswlib.getMaxIndexLength(reference);
+        }
+
+    /**
+     * Resize the index.
+     *
+     * @param maxSize  the new maximum size to resize the index to
+     */
+    void resize(int maxSize)
+        {
+        hnswlib.resizeIndex(reference, maxSize);
+        }
+
+    /**
      * Performs a knn query in the index instance. In case the vector space
      * requires the input to be normalized, it will normalize at the native
      * level.

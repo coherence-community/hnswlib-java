@@ -111,9 +111,13 @@ public:
 
     int add_item(float* item, int id, bool replaceDeleted = false) {
         TRY_CATCH_RETURN_INT_BLOCK({
-            if (get_current_count() >= get_max_elements()) {
-                return RESULT_ITEM_CANNOT_BE_INSERTED_INTO_THE_VECTOR_SPACE;
-            }            
+            int max_elements = get_max_elements();
+            if (get_current_count() >= max_elements) {
+                if (max_elements < 0x7FFFFF)
+                    resize_index(max_elements << 1);
+                else
+                    resize_index(max_elements + (max_elements >> 1));
+            }
             int current_id = id != -1 ? id : incremental_id++;
             appr_alg->addPoint(item, current_id, replaceDeleted);
         });
@@ -235,6 +239,14 @@ EXTERN_C DLLEXPORT int getIndexLength(Index<float>* index) {
     } else {
         return 0;
     }
+}
+
+EXTERN_C DLLEXPORT int getMaxIndexLength(Index<float>* index) {
+    return index->get_max_elements();
+}
+
+EXTERN_C DLLEXPORT void resizeIndex(Index<float>* index, int maxNumberOfElements) {
+    index->resize_index(maxNumberOfElements);
 }
 
 EXTERN_C DLLEXPORT int saveIndexToPath(Index<float>* index, char* path) {

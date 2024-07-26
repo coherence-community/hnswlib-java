@@ -66,6 +66,23 @@ public interface Hnswlib
     int getIndexLength(Pointer index);
 
     /**
+     * Retrieve the maximum number of elements that can be inserted into the index.
+     *
+     * @param index - JNA pointer reference of the index.
+     *
+     * @return number of items that can be inserted into the index.
+     */
+    int getMaxIndexLength(Pointer index);
+
+    /**
+     * Resize the index.
+     *
+     * @param index    JNA pointer reference of the index
+     * @param maxSize  the new maximum size to resize the index to
+     */
+    void resizeIndex(Pointer index, int maxSize);
+
+    /**
      * Save the content of an index into a file (using native implementation).
      *
      * @param index - JNA pointer reference of the index.

@@ -222,7 +222,7 @@ public abstract class AbstractIndexTest {
 		index.clear();
 	}
 
-	@Test(expected = ItemCannotBeInsertedIntoTheVectorSpaceException.class)
+	@Test
 	public void testIncludingMoreItemsThanPossible() throws UnexpectedNativeException {
 		Index index = createIndexInstance(SpaceName.L2, 4);
 		index.initialize(2);
@@ -230,6 +230,9 @@ public abstract class AbstractIndexTest {
 		index.addItem(new float[] { 1.0f, 1.0f, 1.0f, 1.0f}, 1);
 		index.addItem(new float[] { 1.0f, 1.0f, 1.0f, 0.95f}, 2);
 		index.addItem(new float[] { 1.0f, 1.0f, 1.0f, 0.9f}, 3);
+
+		assertEquals(3, index.getLength());
+		assertEquals(4, index.getMaxLength());
 	}
 
 	@Test
